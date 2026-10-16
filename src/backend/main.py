@@ -31,9 +31,9 @@ logging.root.setLevel(logging.INFO)
 logging.root.addHandler(_log_handler)
 # ─────────────────────────────────────────────────────────────────────────────
 from database.seed import run_all_seeds
-from api import unternehmen, konten, kategorien, setup, journal, kunden, lieferanten, tagesabschluss, nummernkreise, export, rechnungen, backup, artikel, artikel_gruppen, ust_saetze, pdf_vorlagen, eks, system, ustva, zm, euer, dokumentenpakete, mail, wiederkehrend, buchungsvorlagen, anlageverzeichnis, datev, anlage_s, anlage_g, fristen_api, guv, bank_templates, bank_import, auto_filter, forderungen, cockpit, datenmigration, kontenuebersicht, schnellbuchungen, mahnwesen, profile, kontokorrent, inventurliste
+from api import unternehmen, konten, kategorien, setup, journal, kunden, lieferanten, tagesabschluss, nummernkreise, export, rechnungen, backup, artikel, artikel_gruppen, ust_saetze, pdf_vorlagen, eks, system, ustva, zm, euer, dokumentenpakete, mail, wiederkehrend, buchungsvorlagen, anlageverzeichnis, datev, anlage_s, anlage_g, fristen_api, guv, bank_templates, bank_import, auto_filter, forderungen, cockpit, datenmigration, kontenuebersicht, schnellbuchungen, mahnwesen, profile, kontokorrent, inventurliste, rechnungen_import
 
-SCHEMA_VERSION = 167
+SCHEMA_VERSION = 168
 
 app = FastAPI(title="RechnungsFee API", version="0.1.0")
 
@@ -95,6 +95,7 @@ app.include_router(forderungen.router)
 app.include_router(cockpit.router)
 app.include_router(datenmigration.router)
 app.include_router(mahnwesen.router)
+app.include_router(rechnungen_import.router)
 
 
 @app.post("/api/shutdown")
@@ -3717,6 +3718,14 @@ def _run_migrations() -> None:
             conn.execute(text("PRAGMA user_version = 167"))
             conn.commit()
             print("[Migration] Schema auf Version 167 (Issue #436: unternehmen.zahlungshinweis_text – eigener Zahlungshinweis mit Platzhaltern)")
+
+        if version < 168:
+            cols = {r[1] for r in conn.execute(text("PRAGMA table_info(rechnungen)")).fetchall()}
+            if "import_quelle" not in cols:
+                conn.execute(text("ALTER TABLE rechnungen ADD COLUMN import_quelle VARCHAR(30)"))
+            conn.execute(text("PRAGMA user_version = 168"))
+            conn.commit()
+            print("[Migration] Schema auf Version 168 (rechnungen.import_quelle)")
 
 
 def _migrate_kategorien() -> None:

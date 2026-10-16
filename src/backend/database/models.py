@@ -699,6 +699,7 @@ class Rechnung(Base):
     beleg_id: Mapped[int | None] = mapped_column(ForeignKey("belege.id"))
     notizen: Mapped[str | None] = mapped_column(Text)
     externe_belegnr: Mapped[str | None] = mapped_column(String(100))  # Lieferanten-Rechnungsnr. (nur Eingang)
+    import_quelle: Mapped[str | None] = mapped_column(String(30))  # z. B. papierkram; historisch, nicht neu ausgeben/mahnen
     kunden_bestellnummer: Mapped[str | None] = mapped_column(String(100))  # Bestellnummer des Kunden (nur Ausgang) -> ZUGFeRD BT-13
     leistung_von: Mapped[date | None] = mapped_column(Date)
     leistung_bis: Mapped[date | None] = mapped_column(Date)
