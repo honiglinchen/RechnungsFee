@@ -282,14 +282,20 @@ def _auswerte_zeile(db: Session, typ: str, row: dict, kategorie_mapping: Optiona
             if not z.kunde:
                 z.warnungen.append("Kein Kunde aus den Stammdaten gefunden – Partner wird als Freitext übernommen.")
         _pruefe_betaege(z)
-        if status in ("bezahlt", "überbezahlt", "ueberbezahlt", "paid") and z.brutto is not None:
+        zahlungsstatus_abgeschlossen = status in ("bezahlt", "überbezahlt", "ueberbezahlt", "paid")
+        if status == "teilweise" or (z.bezahlt_betrag is not None and z.bezahlt_betrag > 0 and not zahlungsstatus_abgeschlossen):
+            z.fehler.append(
+                "Teilzahlungen/Ratenzahlungen werden beim CSV-Import nicht unterstützt – "
+                "bitte manuell erfassen."
+            )
+        if zahlungsstatus_abgeschlossen and z.brutto is not None:
             if z.bezahlt_betrag is None or z.bezahlt_betrag <= 0:
                 z.bezahlt_betrag = z.brutto
             if z.bezahlt_am is None:
                 z.bezahlt_am = z.faellig_am or z.datum
                 if z.bezahlt_am:
                     z.warnungen.append("Kein Zahlungsdatum in der CSV – Zahlungsdatum der Fälligkeit/des Rechnungsdatums verwendet.")
-        elif status in ("unbezahlt", "offen", "teilweise", ""):
+        elif status in ("unbezahlt", "offen", ""):
             z.bezahlt_betrag = None
         else:
             z.warnungen.append(f"Unbekannter Status '{status}' – ohne Zahlung importiert.")

@@ -295,6 +295,43 @@ def test_vorschau_importiert_nichts(db):
     assert db.query(Rechnung).count() == 0
 
 
+@pytest.mark.parametrize("status", ["teilweise", "teilbezahlt", "partially paid"])
+def test_vorschau_lehnt_teilzahlung_mit_hinweis_ab(db, status):
+    csv_inhalt = RECHNUNGEN_CSV.replace(b"R-00001", b"R-00990", 1).replace(
+        b"Bezahlt;Rechnung;45,00;0,00;45,00;0,00;45,00",
+        f"{status};Rechnung;100,00;0,00;100,00;0,00;40,00".encode(), 1,
+    )
+    zeile = asyncio.run(import_vorschau(_FakeUpload(csv_inhalt), TYP_RECHNUNGEN, "", db=db))[0]
+    assert any("Teilzahlungen/Ratenzahlungen" in fehler and "manuell erfassen" in fehler for fehler in zeile.fehler)
+
+
+@pytest.mark.parametrize("status", ["teilweise", "teilbezahlt", "partially paid", "offen", "unbezahlt"])
+def test_import_lehnt_nicht_abbildbare_positive_zahlung_ohne_side_effects(db, status):
+    from database.models import Journaleintrag
+
+    csv_inhalt = RECHNUNGEN_CSV.replace(b"R-00001", b"R-00989", 1).replace(
+        b"Bezahlt;Rechnung;45,00;0,00;45,00;0,00;45,00",
+        f"{status};Rechnung;100,00;0,00;100,00;0,00;40,00".encode(), 1,
+    )
+    result = asyncio.run(import_durchfuehren(_FakeUpload(csv_inhalt), TYP_RECHNUNGEN, "", db=db))
+    assert result.fehler == 1
+    assert result.importiert == 1
+    rejected = next(row for row in result.zeilen if row.rechnungsnummer == "R-00989")
+    assert rejected.status == "fehler"
+    assert "Teilzahlungen/Ratenzahlungen" in rejected.begruendung
+    assert db.query(Rechnung).filter(Rechnung.rechnungsnummer == "R-00989").count() == 0
+    assert db.query(Journaleintrag).count() == 0
+
+
+def test_import_unbezahlte_rechnung_ohne_betrag_bleibt_unveraendert(db):
+    csv_inhalt = RECHNUNGEN_CSV.replace(b"R-00002", b"R-00988", 1)
+    result = asyncio.run(import_durchfuehren(_FakeUpload(csv_inhalt), TYP_RECHNUNGEN, "", db=db))
+    assert result.fehler == 0
+    rechnung = db.query(Rechnung).filter(Rechnung.rechnungsnummer == "R-00988").one()
+    assert rechnung.zahlungsstatus == "offen"
+    assert rechnung.bezahlt_betrag == Decimal("0.00")
+
+
 @pytest.mark.parametrize("netto,ust,brutto", [
     ("100,00", "19,00", "119,00"),
     ("100,00", "7,00", "107,00"),
