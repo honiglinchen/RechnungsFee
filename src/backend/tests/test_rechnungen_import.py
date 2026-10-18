@@ -216,6 +216,39 @@ def test_import_belege_mit_kategorie_bucht_zahlung(db):
     assert eintrag.signatur
 
 
+def test_import_beleg_mit_mapping_bucht_vorsteuer_und_zahlungskategorie(db):
+    """Der echte Importpfad übernimmt das explizite Mapping auch bei Vorsteuer."""
+    from database.models import Journaleintrag, Rechnungsposition
+
+    unternehmen = db.query(Unternehmen).first()
+    unternehmen.ist_kleinunternehmer = False
+    kategorie = db.query(Kategorie).filter(Kategorie.name == "Bürobedarf").first()
+    kategorie.ust_satz_standard = 19
+    kategorie.vorsteuer_prozent = Decimal("100")
+    db.commit()
+
+    csv_inhalt = BELEGE_CSV.replace(
+        b"-56,99;0,00;-56,99;0;domestic;B\xc3\xbcrobedarf",
+        b"-100,00;-19,00;-119,00;0;domestic;Alt-Kategorie",
+    ).replace(b"03.08.2026;03.08.2026;2026-07-19;paid;", b"03.10.2026;03.10.2026;2026-10-15;paid;")
+    mapping = '{"Alt-Kategorie":"Bürobedarf"}'
+    preview = asyncio.run(import_vorschau(_FakeUpload(csv_inhalt), TYP_BELEGE, mapping, db=db))
+    assert preview[0].kategorie == "Bürobedarf"
+    assert preview[0].fehler == []
+
+    result = asyncio.run(import_durchfuehren(_FakeUpload(csv_inhalt), TYP_BELEGE, mapping, db=db))
+    assert result.importiert == 1
+    assert result.fehler == 0
+    rechnung = db.query(Rechnung).filter(Rechnung.externe_belegnr == "B-00001").one()
+    position = db.query(Rechnungsposition).filter(Rechnungsposition.rechnung_id == rechnung.id).one()
+    journal = db.query(Journaleintrag).filter(Journaleintrag.rechnung_id == rechnung.id).one()
+    assert rechnung.kategorie_id == kategorie.id
+    assert position.kategorie_id == kategorie.id
+    assert rechnung.ust_gesamt == Decimal("19.00")
+    assert journal.kategorie_id == kategorie.id
+    assert journal.brutto_betrag == Decimal("119.00")
+
+
 def test_import_belege_ohne_kategorie_ohne_zahlung(db):
     csv_inhalt = BELEGE_CSV.replace(";Bürobedarf;".encode("utf-8"), ";Unbekannte Kategorie;".encode("utf-8"))
     ergebnis = asyncio.run(import_durchfuehren(_FakeUpload(csv_inhalt), TYP_BELEGE, "", db=db))
@@ -370,6 +403,8 @@ def test_importierte_offene_rechnung_bleibt_im_offenen_posten_und_kontokorrent_s
 
 
 def test_importierte_rechnung_zeigt_vorhandenes_original_pdf_an(db, tmp_path, monkeypatch):
+    from io import BytesIO
+    from pypdf import PdfReader, PdfWriter
     from api.rechnungen import rechnung_als_pdf
     import api.rechnungen as rechnungen_api
 
@@ -377,14 +412,20 @@ def test_importierte_rechnung_zeigt_vorhandenes_original_pdf_an(db, tmp_path, mo
     rechnung = db.query(Rechnung).filter(Rechnung.rechnungsnummer == "R-00001").first()
     uploads = tmp_path / "uploads"
     uploads.mkdir()
-    (uploads / "original.pdf").write_bytes(b"synthetic original pdf")
+    writer = PdfWriter()
+    writer.add_blank_page(width=72, height=72)
+    pdf_fixture = BytesIO()
+    writer.write(pdf_fixture)
+    synthetic_pdf = pdf_fixture.getvalue()
+    (uploads / "original.pdf").write_bytes(synthetic_pdf)
     rechnung.original_pdf_pfad = "uploads/original.pdf"
     db.commit()
     monkeypatch.setattr(rechnungen_api, "APP_DATA_DIR", tmp_path)
 
     response = rechnung_als_pdf(rechnung.id, nur_ansehen=True, db=db)
-    assert response.body == b"synthetic original pdf"
+    assert response.body == synthetic_pdf
     assert response.headers["Content-Disposition"].startswith("inline;")
+    assert len(PdfReader(BytesIO(response.body)).pages) == 1
 
 
 def test_importierte_rechnung_ist_vor_neuer_mahnung_geschuetzt(db):

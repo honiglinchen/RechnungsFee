@@ -20,4 +20,4 @@ def test_migration_168_adds_import_quelle_to_existing_database(tmp_path, monkeyp
         columns = {row[1] for row in conn.execute("PRAGMA table_info(rechnungen)")}
         version = conn.execute("PRAGMA user_version").fetchone()[0]
     assert "import_quelle" in columns
-    assert version == 168
+    assert version == main.SCHEMA_VERSION

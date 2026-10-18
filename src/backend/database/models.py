@@ -244,6 +244,19 @@ class Kategorie(Base):
     transaktionen: Mapped[list["BankTransaktion"]] = relationship(back_populates="kategorie")
 
 
+class ImportMappingVorlage(Base):
+    """Gespeicherte Spaltenzuordnungen für CSV-Stammdatenimporte."""
+    __tablename__ = "import_mapping_vorlagen"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    typ: Mapped[str] = mapped_column(String(20), nullable=False)
+    hat_header: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
+    mapping_json: Mapped[str] = mapped_column(Text, nullable=False)
+    typ_erkennung_aktiv: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    erstellt_am: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
 class Schnellbuchung(Base):
     """Wiederverwendbare Vorlage für häufige manuelle Journalbuchungen (Issue #256).
 

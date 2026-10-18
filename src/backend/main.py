@@ -33,7 +33,7 @@ logging.root.addHandler(_log_handler)
 from database.seed import run_all_seeds
 from api import unternehmen, konten, kategorien, setup, journal, kunden, lieferanten, tagesabschluss, nummernkreise, export, rechnungen, backup, artikel, artikel_gruppen, ust_saetze, pdf_vorlagen, eks, system, ustva, zm, euer, dokumentenpakete, mail, wiederkehrend, buchungsvorlagen, anlageverzeichnis, datev, anlage_s, anlage_g, fristen_api, guv, bank_templates, bank_import, auto_filter, forderungen, cockpit, datenmigration, kontenuebersicht, schnellbuchungen, mahnwesen, profile, kontokorrent, inventurliste, rechnungen_import
 
-SCHEMA_VERSION = 168
+SCHEMA_VERSION = 169
 
 app = FastAPI(title="RechnungsFee API", version="0.1.0")
 
@@ -3726,6 +3726,22 @@ def _run_migrations() -> None:
             conn.execute(text("PRAGMA user_version = 168"))
             conn.commit()
             print("[Migration] Schema auf Version 168 (rechnungen.import_quelle)")
+
+        if version < 169:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS import_mapping_vorlagen (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name VARCHAR(100) NOT NULL,
+                    typ VARCHAR(20) NOT NULL,
+                    hat_header BOOLEAN DEFAULT 1,
+                    mapping_json TEXT NOT NULL,
+                    typ_erkennung_aktiv BOOLEAN DEFAULT 0,
+                    erstellt_am DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            conn.execute(text("PRAGMA user_version = 169"))
+            conn.commit()
+            print("[Migration] Schema auf Version 169 (import_mapping_vorlagen)")
 
 
 def _migrate_kategorien() -> None:

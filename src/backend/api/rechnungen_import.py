@@ -517,6 +517,7 @@ async def import_durchfuehren(
                 lieferant_id=z.lieferant.id if z.lieferant else None,
                 partner_freitext=None if (z.kunde or z.lieferant) else z.partner_name,
                 partner_land=z.land,
+                kategorie_id=z.kategorie.id if z.kategorie else None,
                 notizen=z.notizen,
                 ist_entwurf=False,
                 dokument_typ="Rechnung",
@@ -528,6 +529,7 @@ async def import_durchfuehren(
                     menge=Decimal("1"),
                     netto=z.netto,
                     ust_satz=z.ust_satz,
+                    kategorie_id=z.kategorie.id if z.kategorie else None,
                 )],
             )
             rechnung = _create_rechnung(create, db, import_quelle="papierkram")

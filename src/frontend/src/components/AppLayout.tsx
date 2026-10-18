@@ -523,7 +523,7 @@ export function AppLayout() {
       </aside>
 
       {/* Hauptinhalt */}
-      <main className="flex-1 overflow-auto flex flex-col">
+      <main className="flex-1 min-w-0 overflow-auto flex flex-col">
         {/* Update-Banner */}
         {updateAvailable && !updateDismissed && (
           <div className={`border-b px-4 py-2.5 flex items-center gap-3 shrink-0 ${
