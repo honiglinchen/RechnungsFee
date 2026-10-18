@@ -546,17 +546,17 @@ function RechnungenBelegeImportFlow() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="min-w-0 max-w-full space-y-5">
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
         Importierte Rechnungen und Belege bleiben in offenen Posten und im Kontokorrent sichtbar. Importierte Ausgangsrechnungen können nicht neu als PDF erzeugt, versendet oder gemahnt werden. Das Original bleibt im Altsystem; vorhandene Originalbelege können weiterhin angehängt werden.
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <label className="text-sm font-medium text-slate-700 dark:text-slate-300">CSV-Typ</label>
-        <select value={typ} onChange={e => { setTyp(e.target.value as RechnungsImportTyp); setDatei(null); setVorschau(null); setErgebnis(null); setMapping({}); setMappingStand('') }} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+        <select value={typ} onChange={e => { setTyp(e.target.value as RechnungsImportTyp); setDatei(null); setVorschau(null); setErgebnis(null); setMapping({}); setMappingStand('') }} className="max-w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
           <option value="rechnungen">Ausgangsrechnungen</option><option value="belege">Eingangsrechnungen &amp; Belege</option>
         </select>
         <button onClick={musterLaden} className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300">Muster-CSV herunterladen</button>
-        <input type="file" accept=".csv,.txt" onChange={e => { setDatei(e.target.files?.[0] ?? null); setVorschau(null); setErgebnis(null); setMapping({}); setMappingStand('') }} className="text-sm text-slate-600 dark:text-slate-300" />
+        <input type="file" accept=".csv,.txt" onChange={e => { setDatei(e.target.files?.[0] ?? null); setVorschau(null); setErgebnis(null); setMapping({}); setMappingStand('') }} className="max-w-full min-w-0 text-sm text-slate-600 dark:text-slate-300" />
         <button onClick={vorschauLaden} disabled={!datei || laedt} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">Vorschau laden</button>
       </div>
       {fehler && <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">{fehler}</div>}
@@ -564,10 +564,10 @@ function RechnungenBelegeImportFlow() {
         {quellen.length > 0 && <section className="space-y-3 rounded-lg border border-slate-200 p-4 dark:border-slate-700">
           <h3 className="font-semibold text-slate-800 dark:text-slate-100">Kategorien ausdrücklich zuordnen</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">Die Zuordnung steuert Konten und Vorsteuer. Für jede CSV-Kategorie ist eine Zielkategorie erforderlich.</p>
-          {quellen.map(q => <label key={q} className="grid gap-2 text-sm sm:grid-cols-2 sm:items-center"><span className="text-slate-700 dark:text-slate-300">{q}</span><select value={mapping[q] ?? ''} onChange={e => setMapping(m => ({ ...m, [q]: e.target.value }))} className="rounded border border-slate-300 bg-white px-2 py-1.5 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"><option value="">Bitte auswählen …</option>{kategorien.filter((k: Kategorie) => k.kontenart !== 'Erlös').map(k => <option key={k.id} value={k.name}>{k.name}</option>)}</select></label>)}
+          {quellen.map(q => <label key={q} className="grid gap-2 text-sm sm:grid-cols-2 sm:items-center"><span className="text-slate-700 dark:text-slate-300">{q}</span><select value={mapping[q] ?? ''} onChange={e => setMapping(m => ({ ...m, [q]: e.target.value }))} className="min-w-0 w-full max-w-full rounded border border-slate-300 bg-white px-2 py-1.5 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"><option value="">Bitte auswählen …</option>{kategorien.filter((k: Kategorie) => k.kontenart !== 'Erlös').map(k => <option key={k.id} value={k.name}>{k.name}</option>)}</select></label>)}
           {!mappingUnveraendert && <button onClick={vorschauLaden} disabled={laedt} className="rounded-lg border border-blue-300 px-3 py-2 text-sm text-blue-700 dark:text-blue-300">Vorschau mit Zuordnung aktualisieren</button>}
         </section>}
-        <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="text-xs uppercase text-slate-500"><tr><th className="p-2">Zeile</th><th className="p-2">Nummer</th><th className="p-2">Partner</th><th className="p-2">Datum</th><th className="p-2">Brutto</th><th className="p-2">Prüfung</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{vorschau.map(z => <tr key={z.zeile}><td className="p-2">{z.zeile}</td><td className="p-2">{z.rechnungsnummer ?? '–'}</td><td className="p-2">{z.partner ?? '–'}</td><td className="p-2">{z.datum ?? '–'}</td><td className="p-2">{z.brutto ?? '–'}</td><td className="p-2 text-xs">{[...z.fehler, ...z.warnungen].join(' · ') || 'Bereit'}</td></tr>)}</tbody></table></div>
+        <div className="max-w-full overflow-x-auto"><table className="w-full text-left text-sm"><thead className="text-xs uppercase text-slate-500"><tr><th className="p-2">Zeile</th><th className="p-2">Nummer</th><th className="p-2">Partner</th><th className="p-2">Datum</th><th className="p-2">Brutto</th><th className="p-2">Prüfung</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{vorschau.map(z => <tr key={z.zeile}><td className="p-2">{z.zeile}</td><td className="p-2">{z.rechnungsnummer ?? '–'}</td><td className="p-2">{z.partner ?? '–'}</td><td className="p-2">{z.datum ?? '–'}</td><td className="p-2">{z.brutto ?? '–'}</td><td className="p-2 text-xs">{[...z.fehler, ...z.warnungen].join(' · ') || 'Bereit'}</td></tr>)}</tbody></table></div>
         <button onClick={importStarten} disabled={laedt || !mappingUnveraendert || !mappingVollstaendig || vorschau.every(z => z.fehler.length > 0)} className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">{laedt ? 'Import läuft …' : 'Import starten'}</button>
         {quellen.length > 0 && !mappingVollstaendig && <span className="ml-3 text-sm text-amber-700 dark:text-amber-300">Bitte alle Kategorien zuordnen.</span>}
       </>}
